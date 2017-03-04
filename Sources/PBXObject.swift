@@ -1,6 +1,6 @@
 import Foundation
 
-typealias JsonObject = [String: AnyObject]
+typealias JsonObject = [String: Any]
 
 public /* abstract */ class PBXObject {
     let id: String
@@ -54,6 +54,11 @@ public /* abstract */ class PBXObject {
         let objectKeys = dict[key] as! [String]
         return objectKeys.map(allObjects.object)
     }
+
+    func toDictionary() -> JsonObject {
+        return [:]
+    }
+
 }
 
 public /* abstract */ class PBXContainer : PBXObject {
