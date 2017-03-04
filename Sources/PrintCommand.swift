@@ -17,34 +17,25 @@ public struct PrintCommand: CommandProtocol {
     public let function = "print contents of project.pbxproj"
     
     public func run(_ options: Options) -> Result<(), AnyError> {
-        
-        print(options.filePath)
-        
         // Use the parsed options to do something interesting here.
-        let data = try! Data(contentsOf: URL(fileURLWithPath: options.filePath))
-        
-        var format: PropertyListSerialization.PropertyListFormat = PropertyListSerialization.PropertyListFormat.binary
-        let obj = try! PropertyListSerialization.propertyList(from: data, options: [], format: &format)
-        
-        let pbxproj = obj as! Dictionary<String, Any>
-        let objects = pbxproj["objects"] as! Dictionary<String, Any>
-        let rootObject = objects[pbxproj["rootObject"] as! String] as! Dictionary<String, Any>
+        let projURL = URL(fileURLWithPath: options.filePath)
+        let projFile = try! XCProjectFile(xcodeprojURL: projURL)
+        let rootObject = projFile.project
         
         let json = [
-            "archiveVersion": pbxproj["archiveVersion"]!,
-            "classes": pbxproj["classes"]!,
-            "objectVersion": pbxproj["objectVersion"]!,
+//            "archiveVersion": pbxproj["archiveVersion"]!,
+//            "classes": pbxproj["classes"]!,
+//            "objectVersion": pbxproj["objectVersion"]!,
             "rootObject": [
-                "attributes": rootObject["attributes"]!,
-                "buildConfigurationList": rootObject["buildConfigurationList"]!,
-                "compatibilityVersion": rootObject["compatibilityVersion"]!,
-                "developmentRegion": rootObject["developmentRegion"]!,
-                "hasScannedForEncodings": rootObject["hasScannedForEncodings"]!,
-                //        "knownRegions": rootObject["knownRegions"],
-                "projectDirPath": rootObject["projectDirPath"]!,
-                "projectRoot": rootObject["projectRoot"]!,
-                "targets": rootObject["targets"]!
-                
+                //"attributes": rootObject["attributes"]!,
+                "buildConfigurationList": rootObject.buildConfigurationList,
+                //"compatibilityVersion": rootObject.["compatibilityVersion"]!,
+                "developmentRegion": rootObject.developmentRegion,
+                "hasScannedForEncodings": rootObject.hasScannedForEncodings,
+                "knownRegions": rootObject.knownRegions,
+                //"projectDirPath": rootObject["projectDirPath"]!,
+                //"projectRoot": rootObject["projectRoot"]!,
+                "targets": rootObject.targets
             ]
         ]
         
