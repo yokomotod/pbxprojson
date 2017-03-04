@@ -38,7 +38,7 @@ public struct PrintCommand: CommandProtocol {
                 "targets": rootObject.targets.map { $0.toDictionary() }
             ]
         ]
-        
+
         print(String(data: try! JSONSerialization.data(withJSONObject: json, options: .prettyPrinted), encoding: .utf8)!)
         
         return .success()
