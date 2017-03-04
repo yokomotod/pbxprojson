@@ -19,29 +19,85 @@ public struct PrintCommand: CommandProtocol {
     public func run(_ options: Options) -> Result<(), AnyError> {
         // Use the parsed options to do something interesting here.
         let projURL = URL(fileURLWithPath: options.filePath)
-        let projFile = try! XCProjectFile(xcodeprojURL: projURL)
-        let rootObject = projFile.project
-        
-        let json = [
-//            "archiveVersion": pbxproj["archiveVersion"]!,
-//            "classes": pbxproj["classes"]!,
-//            "objectVersion": pbxproj["objectVersion"]!,
-            "rootObject": [
-                //"attributes": rootObject["attributes"]!,
-                "buildConfigurationList": rootObject.buildConfigurationList.toDictionary(),
-                //"compatibilityVersion": rootObject.["compatibilityVersion"]!,
-                //"developmentRegion": rootObject.developmentRegion,
-                "hasScannedForEncodings": rootObject.hasScannedForEncodings,
-                "knownRegions": rootObject.knownRegions,
-                //"projectDirPath": rootObject["projectDirPath"]!,
-                //"projectRoot": rootObject["projectRoot"]!,
-                "targets": rootObject.targets.map { $0.toDictionary() }
-            ]
-        ]
 
-        print(String(data: try! JSONSerialization.data(withJSONObject: json, options: .prettyPrinted), encoding: .utf8)!)
-        
+        guard let data = try? Data(contentsOf: projURL) else {
+            fatalError("failed to load.")
+        }
+
+        var format: PropertyListSerialization.PropertyListFormat = .binary
+        guard let propertyList = try? PropertyListSerialization.propertyList(from: data, options: [], format: &format), let pbxproj = propertyList as? Dictionary<String, Any> else {
+            fatalError("failed to deserialize")
+        }
+
+        guard let objects = pbxproj["objects"] as? Dictionary<String, Any> else {
+            fatalError("cannot find objects field")
+        }
+
+        var values: [String: Value] = [:]
+        for (key, object) in objects {
+            if let object = object as? Dictionary<String, Any> {
+                values[key] = parse(object: object)
+            }
+        }
+
+        guard let rootObjectKey = pbxproj["rootObject"] as? String, let rootValue = values[rootObjectKey] else {
+            fatalError("cannot find root value")
+        }
+
+        let resolvedRootValue = rootValue.resolve(values: values)
+
+        guard let serizliedJSONData = try? JSONSerialization.data(withJSONObject: resolvedRootValue, options: .prettyPrinted) else {
+            fatalError("failed to serialize JSON")
+        }
+
+        print(String(data: serizliedJSONData, encoding: .utf8)!)
+
         return .success()
+    }
+
+    indirect enum Value {
+        case raw(Any)
+        case ref(String)
+        case array([Value])
+        case dictionary([String: Value])
+
+        func resolve(values: Dictionary<String, Value>, depth: Int = 0) -> Any {
+            switch self {
+            case .raw(let value):
+                return String(describing: value)
+            case .ref(let ref):
+                return values[ref]!.resolve(values: values, depth: depth + 1)
+            case .array(let array):
+                return array.map { $0.resolve(values: values, depth: depth) }
+            case .dictionary(let dict):
+                var newDict: [String: Any] = [:]
+                for (key, value) in dict {
+                    newDict[key] = value.resolve(values: values, depth: depth)
+                }
+                return newDict
+            }
+        }
+    }
+
+    private func parse(object: Dictionary<String, Any>) -> Value {
+        func makeValue(obj: Any) -> Value {
+            switch obj {
+            case let ref as String where ref.hasPrefix("OBJ_"):
+                return .ref(ref)
+            case let array as Array<String>:
+                return .array(array.map { makeValue(obj: $0) })
+            case let dict as Dictionary<String, Any>:
+                return parse(object: dict)
+            default:
+                return .raw(obj)
+            }
+        }
+
+        var rootDict: [String: Value] = [:]
+        for (key, value) in object {
+            rootDict[key] = makeValue(obj: value)
+        }
+        return .dictionary(rootDict)
     }
 }
 
