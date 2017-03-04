@@ -83,7 +83,14 @@ public /* abstract */ class PBXProjectItem : PBXContainerItem {
 }
 
 public class PBXBuildFile : PBXProjectItem {
-    public lazy var fileRef: PBXReference? = self.object("fileRef")
+    public lazy var fileRef: PBXFileReference? = self.object("fileRef")
+    
+    override func toDictionary() -> JsonObject {
+        var result: JsonObject = super.toDictionary()
+        if let fileRef = self.fileRef { result["fileRef"] = fileRef.toDictionary() }
+            
+        return result
+    }
 }
 
 
@@ -142,18 +149,41 @@ public class PBXReference : PBXContainerItem {
     public lazy var name: String? = self.string("name")
     public lazy var path: String? = self.string("path")
     public lazy var sourceTree: SourceTree = self.string("sourceTree").flatMap(SourceTree.init)!
+    
+    override func toDictionary() -> JsonObject {
+        var result: JsonObject = super.toDictionary()
+        if let name = self.name { result["name"] = name }
+        if let path = self.path { result["path"] = path }
+        result["sourceTree"] = self.sourceTree
+        
+        return result
+    }
 }
 
 public class PBXFileReference : PBXReference {
     
     // convenience accessor
     public lazy var fullPath: Path = self.allObjects.fullFilePaths[self.id]!
+    
+    override func toDictionary() -> JsonObject {
+        var result: JsonObject = super.toDictionary()
+        result["fullPath"] = self.fullPath
+        
+        return result
+    }
 }
 
 public class PBXReferenceProxy : PBXReference {
     
     // convenience accessor
     public lazy var remoteRef: PBXContainerItemProxy = self.object("remoteRef")
+    
+    override func toDictionary() -> JsonObject {
+        var result: JsonObject = super.toDictionary()
+        result["remoteRef"] = self.remoteRef.toDictionary()
+        
+        return result
+    }
 }
 
 public class PBXGroup : PBXReference {
@@ -162,6 +192,15 @@ public class PBXGroup : PBXReference {
     // convenience accessors
     public lazy var subGroups: [PBXGroup] = self.children.ofType(PBXGroup.self)
     public lazy var fileRefs: [PBXFileReference] = self.children.ofType(PBXFileReference.self)
+    
+    override func toDictionary() -> JsonObject {
+        var result: JsonObject = super.toDictionary()
+        result["children"] = self.children.map { $0.toDictionary() }
+        result["subGroups"] = self.subGroups.map { $0.toDictionary() }
+        result["fileRefs"] = self.fileRefs.map { $0.toDictionary() }
+        
+        return result
+    }
 }
 
 public class PBXVariantGroup : PBXGroup {
