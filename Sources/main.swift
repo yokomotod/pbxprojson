@@ -3,3 +3,5 @@ import Result
 
 
 let commandRegistry = CommandRegistry<AnyError>()
+
+
