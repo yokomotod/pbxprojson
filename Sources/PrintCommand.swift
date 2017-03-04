@@ -33,10 +33,17 @@ public struct PrintCommand: CommandProtocol {
             fatalError("cannot find objects field")
         }
 
+        var referenceIDList: [String] = []
+        for (key, value) in objects {
+            if let dict = value as? Dictionary<String, Any>, let isa = dict["isa"] as? String, isa != "PBXContainerItemProxy" {
+                referenceIDList.append(key)
+            }
+        }
+
         var values: [String: Value] = [:]
         for (key, object) in objects {
             if let object = object as? Dictionary<String, Any> {
-                values[key] = parse(object: object)
+                values[key] = parse(object: object, referenceIDList: Array(referenceIDList))
             }
         }
 
@@ -79,15 +86,15 @@ public struct PrintCommand: CommandProtocol {
         }
     }
 
-    private func parse(object: Dictionary<String, Any>) -> Value {
+    private func parse(object: Dictionary<String, Any>, referenceIDList: [String]) -> Value {
         func makeValue(obj: Any) -> Value {
             switch obj {
-            case let ref as String where ref.hasPrefix("OBJ_"):
+            case let ref as String where referenceIDList.contains(ref):
                 return .ref(ref)
             case let array as Array<String>:
                 return .array(array.map { makeValue(obj: $0) })
             case let dict as Dictionary<String, Any>:
-                return parse(object: dict)
+                return parse(object: dict, referenceIDList: referenceIDList)
             default:
                 return .raw(obj)
             }
