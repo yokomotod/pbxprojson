@@ -54,24 +54,30 @@ public /* abstract */ class PBXObject {
         let objectKeys = dict[key] as! [String]
         return objectKeys.map(allObjects.object)
     }
+    
+    func dictionary(_ key: String) -> [String: Any]? {
+        return dict[key] as? [String: Any]
+    }
 
     func toDictionary() -> JsonObject {
         return [:]
     }
-
 }
 
 public /* abstract */ class PBXContainer : PBXObject {
 }
 
 public class PBXProject : PBXContainer {
+    public lazy var compatibilityVersion: String = self.string("compatibilityVersion")!
     public lazy var developmentRegion: String = self.string("developmentRegion")!
     public lazy var hasScannedForEncodings: Bool = self.bool("hasScannedForEncodings")!
     public lazy var knownRegions: [String] = self.strings("knownRegions")!
     public lazy var targets: [PBXNativeTarget] = self.objects("targets")
     public lazy var mainGroup: PBXGroup = self.object("mainGroup")
     public lazy var buildConfigurationList: XCConfigurationList = self.object("buildConfigurationList")
-
+    public lazy var projectDirPath: String = self.string("projectDirPath")!
+    public lazy var projectRoot: String = self.string("projectRoot")!
+    
     override func toDictionary() -> JsonObject {
         return [
             "developmentRegion": self.developmentRegion,
@@ -88,6 +94,10 @@ public /* abstract */ class PBXContainerItem : PBXObject {
 }
 
 public class PBXContainerItemProxy : PBXContainerItem {
+    public lazy var containerPortal: PBXProject = self.object("containerPortal")
+    public lazy var proxyType: String = self.string("proxyType")!
+    public lazy var remoteGlobalIDString: PBXProject = self.object("remoteGlobalIDString")
+    public lazy var remoteInfo: String = self.string("remoteInfo")!
 }
 
 public /* abstract */ class PBXProjectItem : PBXContainerItem {
@@ -157,6 +167,7 @@ public class PBXBuildStyle : PBXProjectItem {
 
 public class XCBuildConfiguration : PBXBuildStyle {
     public lazy var name: String = self.string("name")!
+    public lazy var buildSettings: [String: Any] = self.dictionary("buildSettings")!
 }
 
 public /* abstract */ class PBXTarget : PBXProjectItem {
@@ -179,12 +190,21 @@ public class PBXAggregateTarget : PBXTarget {
 }
 
 public class PBXNativeTarget : PBXTarget {
+    // TODO: buildRules
+    public lazy var dependencies: [PBXTargetDependency] = self.objects("dependencies")
+    public lazy var productReference: [PBXFileReference] = self.objects("productReference")
+    public lazy var productType: String = self.string("productType")!
 }
 
 public class PBXTargetDependency : PBXProjectItem {
+    public lazy var target: PBXNativeTarget = self.object("target")
+    public lazy var targetProxy: PBXContainerItemProxy = self.object("targetProxy")
 }
 
 public class XCConfigurationList : PBXProjectItem {
+    public lazy var buildConfigurations: [XCBuildConfiguration] = self.objects("buildConfigurations")
+    public lazy var defaultConfigurationIsVisible: Bool = self.bool("defaultConfigurationIsVisible")!
+    public lazy var defaultConfigurationName: String = self.string("defaultConfigurationName")!
 }
 
 public class PBXReference : PBXContainerItem {

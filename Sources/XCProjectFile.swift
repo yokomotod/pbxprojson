@@ -48,8 +48,7 @@ public class XCProjectFile {
     let allObjects = AllObjects()
     
     public convenience init(xcodeprojURL: URL) throws {
-        let pbxprojURL = xcodeprojURL.appendingPathComponent("project.pbxproj", isDirectory: false)
-        let data = try Data(contentsOf: pbxprojURL)
+        let data = try Data(contentsOf: xcodeprojURL)
         
         try self.init(propertyListData: data)
     }
