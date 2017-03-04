@@ -8,10 +8,10 @@
 import Commandant
 import Result
 
-public struct TestCommand: CommandProtocol {
+public struct OkCommand: CommandProtocol {
     public typealias Options = NoOptions<AnyError>
     
-    public let verb = "test"
+    public let verb = "ok"
     public let function = "execute test command"
     
     public func run(_ options: Options) -> Result<(), AnyError> {
