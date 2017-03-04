@@ -83,7 +83,7 @@ public class PBXProject : PBXContainer {
             "developmentRegion": self.developmentRegion,
             "hasScannedForEncodings": self.hasScannedForEncodings,
             "knownRegions": self.knownRegions,
-            "targets": self.targets.map { $0.toDictionary },
+            "targets": self.targets.map { $0.toDictionary() },
             "mainGroup": self.mainGroup.toDictionary(),
             "buildConfigurationList": self.buildConfigurationList.toDictionary()
         ]
@@ -121,7 +121,7 @@ public /* abstract */ class PBXBuildPhase : PBXProjectItem {
 
     override public func toDictionary() -> JsonObject {
         return [
-            "files": self.files.map { $0.toDictionary },
+            "files": self.files.map { $0.toDictionary() },
             "runOnlyForDeploymentPostprocessing": self.runOnlyForDeploymentPostprocessing
         ]
     }
@@ -216,7 +216,7 @@ public class PBXReference : PBXContainerItem {
         var result: JsonObject = super.toDictionary()
         if let name = self.name { result["name"] = name }
         if let path = self.path { result["path"] = path }
-        result["sourceTree"] = self.sourceTree
+        result["sourceTree"] = self.sourceTree.toString()
         
         return result
     }
@@ -225,11 +225,11 @@ public class PBXReference : PBXContainerItem {
 public class PBXFileReference : PBXReference {
     
     // convenience accessor
-    public lazy var fullPath: Path = self.allObjects.fullFilePaths[self.id]!
+    public lazy var fullPath: Path? = self.allObjects.fullFilePaths[self.id]
     
     override func toDictionary() -> JsonObject {
         var result: JsonObject = super.toDictionary()
-        result["fullPath"] = self.fullPath
+        if let fullPath = self.fullPath { result["fullPath"] = fullPath.toString() }
         
         return result
     }
@@ -290,6 +290,10 @@ public enum SourceTree {
             self = .relativeTo(sourceTreeFolder)
         }
     }
+
+    func toString() -> String {
+        return "SourceTree"
+    }
 }
 
 public enum SourceTreeFolder: String {
@@ -302,4 +306,8 @@ public enum SourceTreeFolder: String {
 public enum Path {
     case absolute(String)
     case relativeTo(SourceTreeFolder, String)
+
+    func toString() -> String {
+        return "Path"
+    }
 }
