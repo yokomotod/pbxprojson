@@ -1,6 +1,6 @@
 import Foundation
 
-typealias JsonObject = [String: Any]
+public typealias JsonObject = [String: Any]
 
 public /* abstract */ class PBXObject {
     let id: String
@@ -71,6 +71,17 @@ public class PBXProject : PBXContainer {
     public lazy var targets: [PBXNativeTarget] = self.objects("targets")
     public lazy var mainGroup: PBXGroup = self.object("mainGroup")
     public lazy var buildConfigurationList: XCConfigurationList = self.object("buildConfigurationList")
+
+    override func toDictionary() -> JsonObject {
+        return [
+            "developmentRegion": self.developmentRegion,
+            "hasScannedForEncodings": self.hasScannedForEncodings,
+            "knownRegions": self.knownRegions,
+            "targets": self.targets.map { $0.toDictionary },
+            "mainGroup": self.mainGroup.toDictionary(),
+            "buildConfigurationList": self.buildConfigurationList.toDictionary()
+        ]
+    }
 }
 
 public /* abstract */ class PBXContainerItem : PBXObject {
@@ -96,10 +107,24 @@ public class PBXBuildFile : PBXProjectItem {
 
 public /* abstract */ class PBXBuildPhase : PBXProjectItem {
     public lazy var files: [PBXBuildFile] = self.objects("files")
+    public lazy var runOnlyForDeploymentPostprocessing: String = self.string("runOnlyForDeploymentPostprocessing")!
+
+    override public func toDictionary() -> JsonObject {
+        return [
+            "files": self.files.map { $0.toDictionary },
+            "runOnlyForDeploymentPostprocessing": self.runOnlyForDeploymentPostprocessing
+        ]
+    }
 }
 
 public class PBXCopyFilesBuildPhase : PBXBuildPhase {
     public lazy var name: String? = self.string("name")
+
+    override public func toDictionary() -> JsonObject {
+        return [
+            "name": self.name!
+        ]
+    }
 }
 
 public class PBXFrameworksBuildPhase : PBXBuildPhase {
@@ -114,6 +139,14 @@ public class PBXResourcesBuildPhase : PBXBuildPhase {
 public class PBXShellScriptBuildPhase : PBXBuildPhase {
     public lazy var name: String? = self.string("name")
     public lazy var shellScript: String = self.string("shellScript")!
+
+    override public func toDictionary() -> JsonObject {
+        return [
+            "name": self.name!,
+            "shellScript": self.shellScript
+        ]
+    }
+
 }
 
 public class PBXSourcesBuildPhase : PBXBuildPhase {
@@ -131,6 +164,15 @@ public /* abstract */ class PBXTarget : PBXProjectItem {
     public lazy var name: String = self.string("name")!
     public lazy var productName: String = self.string("productName")!
     public lazy var buildPhases: [PBXBuildPhase] = self.objects("buildPhases")
+
+    override func toDictionary() -> JsonObject {
+        return [
+            "buildConfigurationList": self.buildConfigurationList.toDictionary(),
+            "name": self.name,
+            "productName": self.productName,
+            "buildPhases": self.buildPhases.map { $0.toDictionary() }
+        ]
+    }
 }
 
 public class PBXAggregateTarget : PBXTarget {
