@@ -30,7 +30,7 @@ public struct PrintCommand: CommandProtocol {
                 //"attributes": rootObject["attributes"]!,
                 "buildConfigurationList": rootObject.buildConfigurationList.toDictionary(),
                 //"compatibilityVersion": rootObject.["compatibilityVersion"]!,
-                "developmentRegion": rootObject.developmentRegion,
+                //"developmentRegion": rootObject.developmentRegion,
                 "hasScannedForEncodings": rootObject.hasScannedForEncodings,
                 "knownRegions": rootObject.knownRegions,
                 //"projectDirPath": rootObject["projectDirPath"]!,
