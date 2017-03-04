@@ -1,1 +1,5 @@
-print("Hello, world!")
+import Commandant
+import Result
+
+
+let commandRegistry = CommandRegistry<AnyError>()
