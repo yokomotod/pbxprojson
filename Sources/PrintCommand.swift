@@ -17,10 +17,20 @@ public struct PrintCommand: CommandProtocol {
     public let function = "print contents of project.pbxproj"
     
     public func run(_ options: Options) -> Result<(), AnyError> {
-        // Use the parsed options to do something interesting here.
-        let projURL = URL(fileURLWithPath: options.filePath)
-
-        guard let data = try? Data(contentsOf: projURL) else {
+        let dataOrNil: Data?
+        
+        if options.useStdin {
+            var fileContent: String = ""
+            while let line = readLine() {
+                fileContent += "\(line)\n"
+            }
+            
+            dataOrNil = fileContent.data(using: .utf8)
+        } else {
+            dataOrNil = try? Data(contentsOf: URL(fileURLWithPath: options.filePath))
+        }
+        
+        guard let data = dataOrNil else {
             fatalError("failed to load.")
         }
 
@@ -110,14 +120,15 @@ public struct PrintCommand: CommandProtocol {
 
 public struct PrintCommandOptions: OptionsProtocol {
     let filePath: String
+    let useStdin: Bool
     
-    static func create(_ filePath: String) -> (String) -> PrintCommandOptions {
-        return { filePath in PrintCommandOptions(filePath: filePath) }
+    static func create(_ filePath: String) -> (Bool) -> PrintCommandOptions {
+        return { useStdin in PrintCommandOptions(filePath: filePath, useStdin: useStdin) }
     }
     
     public static func evaluate(_ m: CommandMode) -> Result<PrintCommandOptions, CommandantError<AnyError>> {
         return create
             <*> m <| Option(key: "filepath", defaultValue: "", usage: "path to project.pbxproj to read")
-            <*> m <| Argument(usage: "print: print <path>")
+            <*> m <| Option(key: "stdin", defaultValue: false, usage: "use stdin instead of filepath (filepath will be ignored)")
     }
 }
