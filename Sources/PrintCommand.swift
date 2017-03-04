@@ -28,14 +28,14 @@ public struct PrintCommand: CommandProtocol {
 //            "objectVersion": pbxproj["objectVersion"]!,
             "rootObject": [
                 //"attributes": rootObject["attributes"]!,
-                "buildConfigurationList": rootObject.buildConfigurationList,
+                "buildConfigurationList": rootObject.buildConfigurationList.toDictionary(),
                 //"compatibilityVersion": rootObject.["compatibilityVersion"]!,
                 "developmentRegion": rootObject.developmentRegion,
                 "hasScannedForEncodings": rootObject.hasScannedForEncodings,
                 "knownRegions": rootObject.knownRegions,
                 //"projectDirPath": rootObject["projectDirPath"]!,
                 //"projectRoot": rootObject["projectRoot"]!,
-                "targets": rootObject.targets
+                "targets": rootObject.targets.map { $0.toDictionary() }
             ]
         ]
         

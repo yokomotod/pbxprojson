@@ -1,6 +1,6 @@
 import Foundation
 
-typealias JsonObject = [String: AnyObject]
+public typealias JsonObject = [String: Any]
 
 public /* abstract */ class PBXObject {
     let id: String
@@ -58,6 +58,10 @@ public /* abstract */ class PBXObject {
     func dictionary(_ key: String) -> [String: Any]? {
         return dict[key] as? [String: Any]
     }
+
+    func toDictionary() -> JsonObject {
+        return [:]
+    }
 }
 
 public /* abstract */ class PBXContainer : PBXObject {
@@ -74,6 +78,16 @@ public class PBXProject : PBXContainer {
     public lazy var projectDirPath: String = self.string("projectDirPath")!
     public lazy var projectRoot: String = self.string("projectRoot")!
     
+    override func toDictionary() -> JsonObject {
+        return [
+            "developmentRegion": self.developmentRegion,
+            "hasScannedForEncodings": self.hasScannedForEncodings,
+            "knownRegions": self.knownRegions,
+            "targets": self.targets.map { $0.toDictionary },
+            "mainGroup": self.mainGroup.toDictionary(),
+            "buildConfigurationList": self.buildConfigurationList.toDictionary()
+        ]
+    }
 }
 
 public /* abstract */ class PBXContainerItem : PBXObject {
@@ -90,16 +104,37 @@ public /* abstract */ class PBXProjectItem : PBXContainerItem {
 }
 
 public class PBXBuildFile : PBXProjectItem {
-    public lazy var fileRef: PBXReference? = self.object("fileRef")
+    public lazy var fileRef: PBXFileReference? = self.object("fileRef")
+    
+    override func toDictionary() -> JsonObject {
+        var result: JsonObject = super.toDictionary()
+        if let fileRef = self.fileRef { result["fileRef"] = fileRef.toDictionary() }
+            
+        return result
+    }
 }
 
 
 public /* abstract */ class PBXBuildPhase : PBXProjectItem {
     public lazy var files: [PBXBuildFile] = self.objects("files")
+    public lazy var runOnlyForDeploymentPostprocessing: String = self.string("runOnlyForDeploymentPostprocessing")!
+
+    override public func toDictionary() -> JsonObject {
+        return [
+            "files": self.files.map { $0.toDictionary },
+            "runOnlyForDeploymentPostprocessing": self.runOnlyForDeploymentPostprocessing
+        ]
+    }
 }
 
 public class PBXCopyFilesBuildPhase : PBXBuildPhase {
     public lazy var name: String? = self.string("name")
+
+    override public func toDictionary() -> JsonObject {
+        return [
+            "name": self.name!
+        ]
+    }
 }
 
 public class PBXFrameworksBuildPhase : PBXBuildPhase {
@@ -114,6 +149,14 @@ public class PBXResourcesBuildPhase : PBXBuildPhase {
 public class PBXShellScriptBuildPhase : PBXBuildPhase {
     public lazy var name: String? = self.string("name")
     public lazy var shellScript: String = self.string("shellScript")!
+
+    override public func toDictionary() -> JsonObject {
+        return [
+            "name": self.name!,
+            "shellScript": self.shellScript
+        ]
+    }
+
 }
 
 public class PBXSourcesBuildPhase : PBXBuildPhase {
@@ -132,6 +175,15 @@ public /* abstract */ class PBXTarget : PBXProjectItem {
     public lazy var name: String = self.string("name")!
     public lazy var productName: String = self.string("productName")!
     public lazy var buildPhases: [PBXBuildPhase] = self.objects("buildPhases")
+
+    override func toDictionary() -> JsonObject {
+        return [
+            "buildConfigurationList": self.buildConfigurationList.toDictionary(),
+            "name": self.name,
+            "productName": self.productName,
+            "buildPhases": self.buildPhases.map { $0.toDictionary() }
+        ]
+    }
 }
 
 public class PBXAggregateTarget : PBXTarget {
@@ -159,18 +211,41 @@ public class PBXReference : PBXContainerItem {
     public lazy var name: String? = self.string("name")
     public lazy var path: String? = self.string("path")
     public lazy var sourceTree: SourceTree = self.string("sourceTree").flatMap(SourceTree.init)!
+    
+    override func toDictionary() -> JsonObject {
+        var result: JsonObject = super.toDictionary()
+        if let name = self.name { result["name"] = name }
+        if let path = self.path { result["path"] = path }
+        result["sourceTree"] = self.sourceTree
+        
+        return result
+    }
 }
 
 public class PBXFileReference : PBXReference {
     
     // convenience accessor
     public lazy var fullPath: Path = self.allObjects.fullFilePaths[self.id]!
+    
+    override func toDictionary() -> JsonObject {
+        var result: JsonObject = super.toDictionary()
+        result["fullPath"] = self.fullPath
+        
+        return result
+    }
 }
 
 public class PBXReferenceProxy : PBXReference {
     
     // convenience accessor
     public lazy var remoteRef: PBXContainerItemProxy = self.object("remoteRef")
+    
+    override func toDictionary() -> JsonObject {
+        var result: JsonObject = super.toDictionary()
+        result["remoteRef"] = self.remoteRef.toDictionary()
+        
+        return result
+    }
 }
 
 public class PBXGroup : PBXReference {
@@ -179,6 +254,15 @@ public class PBXGroup : PBXReference {
     // convenience accessors
     public lazy var subGroups: [PBXGroup] = self.children.ofType(PBXGroup.self)
     public lazy var fileRefs: [PBXFileReference] = self.children.ofType(PBXFileReference.self)
+    
+    override func toDictionary() -> JsonObject {
+        var result: JsonObject = super.toDictionary()
+        result["children"] = self.children.map { $0.toDictionary() }
+        result["subGroups"] = self.subGroups.map { $0.toDictionary() }
+        result["fileRefs"] = self.fileRefs.map { $0.toDictionary() }
+        
+        return result
+    }
 }
 
 public class PBXVariantGroup : PBXGroup {
