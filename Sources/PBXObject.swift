@@ -98,6 +98,15 @@ public class PBXContainerItemProxy : PBXContainerItem {
     public lazy var proxyType: String = self.string("proxyType")!
     public lazy var remoteGlobalIDString: PBXProject = self.object("remoteGlobalIDString")
     public lazy var remoteInfo: String = self.string("remoteInfo")!
+    
+    override func toDictionary() -> JsonObject {
+        return [
+            "containerPortal": self.containerPortal.toDictionary(),
+            "proxyType": self.proxyType,
+            "remoteGlobalIDString": self.remoteGlobalIDString.toDictionary(),
+            "remoteInfo": self.remoteInfo
+        ]
+    }
 }
 
 public /* abstract */ class PBXProjectItem : PBXContainerItem {
@@ -168,6 +177,13 @@ public class PBXBuildStyle : PBXProjectItem {
 public class XCBuildConfiguration : PBXBuildStyle {
     public lazy var name: String = self.string("name")!
     public lazy var buildSettings: [String: Any] = self.dictionary("buildSettings")!
+    
+    override public func toDictionary() -> JsonObject {
+        return [
+            "name": self.name,
+            "shellScript": self.buildSettings
+        ]
+    }
 }
 
 public /* abstract */ class PBXTarget : PBXProjectItem {
@@ -194,17 +210,40 @@ public class PBXNativeTarget : PBXTarget {
     public lazy var dependencies: [PBXTargetDependency] = self.objects("dependencies")
     public lazy var productReference: [PBXFileReference] = self.objects("productReference")
     public lazy var productType: String = self.string("productType")!
+    
+    override public func toDictionary() -> JsonObject {
+        return[
+            "dependencies": self.dependencies.map { $0.toDictionary() },
+            "productReference": self.productReference.map { $0.toDictionary() },
+            "productType": self.productType
+        ]
+    }
 }
 
 public class PBXTargetDependency : PBXProjectItem {
     public lazy var target: PBXNativeTarget = self.object("target")
     public lazy var targetProxy: PBXContainerItemProxy = self.object("targetProxy")
+    
+    override public func toDictionary() -> JsonObject {
+        return[
+            "target": self.target.toDictionary(),
+            "targetProxy": self.targetProxy.toDictionary()
+        ]
+    }
 }
 
 public class XCConfigurationList : PBXProjectItem {
     public lazy var buildConfigurations: [XCBuildConfiguration] = self.objects("buildConfigurations")
     public lazy var defaultConfigurationIsVisible: Bool = self.bool("defaultConfigurationIsVisible")!
     public lazy var defaultConfigurationName: String = self.string("defaultConfigurationName")!
+    
+    override public func toDictionary() -> JsonObject {
+        return[
+            "buildConfigurations": self.buildConfigurations.map { $0.toDictionary() },
+            "defaultConfigurationIsVisible": self.defaultConfigurationIsVisible,
+            "defaultConfigurationName": self.defaultConfigurationName
+        ]
+    }
 }
 
 public class PBXReference : PBXContainerItem {
